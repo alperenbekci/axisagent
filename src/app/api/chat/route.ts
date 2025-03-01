@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { ChatOpenAI } from '@langchain/openai';
 import { initializeAgentExecutorWithOptions } from 'langchain/agents';
 import { DynamicTool } from '@langchain/core/tools';
+import { queryVectorStore } from '@/utils/rag';
 
 // MultiversX API araçlarını oluştur
 const getAccountDetails = new DynamicTool({
   name: 'get_account_details',
-  description: 'Bir hesabın detaylarını almak için kullanılır. Hesap bakiyesi, token\'ları ve diğer bilgileri içerir. Örnek adres formatı: erd1... Kullanım: Hesap bakiyesi, token bilgileri veya genel hesap durumu sorgulandığında kullanılır.',
+  description: 'Use this tool to get account details. Requires an address parameter.',
   async func(address: string) {
     const response = await fetch(`https://api.multiversx.com/accounts/${address}`);
     const data = await response.json();
@@ -16,7 +17,7 @@ const getAccountDetails = new DynamicTool({
 
 const getTokenDetails = new DynamicTool({
   name: 'get_token_details',
-  description: 'Bir token\'ın detaylarını almak için kullanılır. Token fiyatı, toplam arz, piyasa değeri gibi bilgileri içerir. Token identifier\'ı gereklidir (örn: WEGLD-bd4d79). Kullanım: Token fiyatı, arzı veya genel token bilgileri sorgulandığında kullanılır.',
+  description: 'Use this tool to get token details. Requires a token identifier.',
   async func(identifier: string) {
     const response = await fetch(`https://api.multiversx.com/tokens/${identifier}`);
     const data = await response.json();
@@ -26,7 +27,7 @@ const getTokenDetails = new DynamicTool({
 
 const getNftDetails = new DynamicTool({
   name: 'get_nft_details',
-  description: 'Bir NFT\'nin detaylarını almak için kullanılır. NFT\'nin özellikleri, metadata\'sı ve diğer bilgileri içerir. NFT identifier\'ı gereklidir. Kullanım: NFT özellikleri, sahibi veya değeri sorgulandığında kullanılır.',
+  description: 'Use this tool to get NFT details. Requires an NFT identifier.',
   async func(identifier: string) {
     const response = await fetch(`https://api.multiversx.com/nfts/${identifier}`);
     const data = await response.json();
@@ -36,7 +37,7 @@ const getNftDetails = new DynamicTool({
 
 const getNetworkStats = new DynamicTool({
   name: 'get_network_stats',
-  description: 'MultiversX ağının güncel istatistiklerini almak için kullanılır. İşlem sayısı, aktif hesaplar, toplam stake miktarı gibi bilgileri içerir. Kullanım: Ağ durumu, istatistikleri veya performansı sorgulandığında kullanılır.',
+  description: 'Use this tool to get MultiversX network statistics.',
   async func() {
     const response = await fetch('https://api.multiversx.com/stats');
     const data = await response.json();
@@ -44,33 +45,12 @@ const getNetworkStats = new DynamicTool({
   },
 });
 
-const getEconomics = new DynamicTool({
-  name: 'get_economics',
-  description: 'MultiversX ağının ekonomik verilerini almak için kullanılır. Toplam arz, dolaşımdaki arz, stake edilmiş miktar gibi bilgileri içerir. Kullanım: Ekonomik veriler, toplam arz veya stake bilgileri sorgulandığında kullanılır.',
-  async func() {
-    const response = await fetch('https://api.multiversx.com/economics');
-    const data = await response.json();
-    return JSON.stringify(data);
-  },
-});
-
-const getAccountTokens = new DynamicTool({
-  name: 'get_account_tokens',
-  description: 'Bir hesabın sahip olduğu tüm token\'ları listeler. Token bakiyeleri ve değerleri gibi bilgileri içerir. Adres parametresi gereklidir. Kullanım: Bir hesabın token varlıkları sorgulandığında kullanılır.',
-  async func(address: string) {
-    const response = await fetch(`https://api.multiversx.com/accounts/${address}/tokens`);
-    const data = await response.json();
-    return JSON.stringify(data);
-  },
-});
-
-const getAccountNfts = new DynamicTool({
-  name: 'get_account_nfts',
-  description: 'Bir hesabın sahip olduğu tüm NFT\'leri listeler. NFT detayları ve koleksiyon bilgilerini içerir. Adres parametresi gereklidir. Kullanım: Bir hesabın NFT varlıkları sorgulandığında kullanılır.',
-  async func(address: string) {
-    const response = await fetch(`https://api.multiversx.com/accounts/${address}/nfts`);
-    const data = await response.json();
-    return JSON.stringify(data);
+const getWebsiteInfo = new DynamicTool({
+  name: 'get_website_info',
+  description: 'Use this tool to get information from MultiversX website about features, technology, or general information.',
+  async func(query: string) {
+    const results = await queryVectorStore(query);
+    return JSON.stringify({ context: results });
   },
 });
 
@@ -92,9 +72,7 @@ export async function POST(req: Request) {
         getTokenDetails,
         getNftDetails,
         getNetworkStats,
-        getEconomics,
-        getAccountTokens,
-        getAccountNfts
+        getWebsiteInfo
       ],
       model,
       {
@@ -103,16 +81,16 @@ export async function POST(req: Request) {
       }
     );
 
-    // Agent'ı çalıştır ve yanıtı formatla
+    // Agent'ı çalıştır
     const result = await executor.invoke({
-      input: `Lütfen aşağıdaki soruyu yanıtla ve yanıtı Türkçe, anlaşılır ve doğal bir dille ver. Teknik detayları sadece gerekli olduğunda kullan: ${message}`,
+      input: `You are a helpful MultiversX blockchain assistant. Please answer the following question using the available tools. If the question is about MultiversX features, technology, or general information, use the get_website_info tool to get relevant context. Question: ${message}`,
     });
 
     return NextResponse.json({ response: result.output });
   } catch (error: any) {
     console.error('Error:', error);
     return NextResponse.json(
-      { error: 'İşlem sırasında bir hata oluştu.' },
+      { error: 'An error occurred while processing your request.' },
       { status: 500 }
     );
   }
