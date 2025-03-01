@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ response: result.output });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error:', error);
     return NextResponse.json(
       { error: 'An error occurred while processing your request.' },
