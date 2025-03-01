@@ -24,12 +24,12 @@ An AI-powered chat application for getting instant information about the Multive
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/multiversx-ai-chat.git
+git clone https://github.com/alperenbekci/axisagent
 ```
 
 2. Navigate to the project directory:
 ```bash
-cd multiversx-ai-chat
+cd axisagent
 ```
 
 3. Install dependencies:
@@ -48,18 +48,6 @@ yarn dev
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 🎨 Design Details
-
-- **Primary Color:** `#23f7de`
-- **Background:** Dark theme with blur effects
-- **Typography:** Modern and readable font system
-- **Animations:** Smooth transitions and pulse effects
-
-## 📱 Responsive Design
-
-- Mobile-first approach
-- Design adapts to all screen sizes
-- Optimized mobile experience
 
 ## 🔧 Configuration
 
@@ -81,8 +69,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📞 Contact
 
-- Website: [your-website.com](https://your-website.com)
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Twitter: [@yourusername](https://twitter.com/yourusername)
